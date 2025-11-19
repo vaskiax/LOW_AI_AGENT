@@ -5,7 +5,7 @@
 ## Descripción
 Una meta-herramienta diseñada para ayudar al usuario a construir *otros* agentes o prompts. Transforma solicitudes vagas en definiciones técnicas estructuradas.
 
-![Imagen del flujo de prompter.json aquí](assets\prompt.png)
+![Imagen del flujo de prompter.json aquí](assets/prompt.png)
 
 ## Flujo de Trabajo
 

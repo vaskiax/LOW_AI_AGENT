@@ -5,7 +5,7 @@
 ## Descripción
 Este agente permite realizar investigaciones bibliográficas. Se conecta a APIs externas para buscar *papers* científicos y artículos, procesa la información y entrega un resumen estructurado.
 
-![Imagen del flujo de researcher.json aquí](assets\research.png)
+![Imagen del flujo de researcher.json aquí](assets/research.png)
 
 ## Flujo de Trabajo
 

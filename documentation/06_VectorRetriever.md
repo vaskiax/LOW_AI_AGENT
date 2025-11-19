@@ -5,7 +5,7 @@
 ## Descripción
 Es el sistema de **RAG (Retrieval-Augmented Generation)**. Permite a LOW responder preguntas basándose en una base de conocimiento privada (documentos previamente guardados y vectorizados en Supabase), en lugar de usar solo su conocimiento general.
 
-![Imagen del flujo de vector_database_retriever.json aquí](assets\rag.png)
+![Imagen del flujo de vector_database_retriever.json aquí](assets/rag.png)
 
 ## Flujo de Trabajo
 

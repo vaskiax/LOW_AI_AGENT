@@ -5,7 +5,7 @@
 ## Descripción
 Una herramienta compleja diseñada para crear hojas de vida hiper-personalizadas. No se limita a escribir; investiga, redacta, se auto-evalúa y genera documentos finales en PDF.
 
-![Imagen del flujo de ResumeTailor.json aquí](assets\cv.png)
+![Imagen del flujo de ResumeTailor.json aquí](assets/cv.png)
 
 ## Flujo de Trabajo
 

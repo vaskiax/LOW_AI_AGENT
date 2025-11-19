@@ -5,7 +5,7 @@
 ## Descripción
 Un agente diseñado para la creatividad lúdica. Transforma conceptos abstractos (teorías, sentimientos, objetos) en cartas coleccionables de estilo TCG (Trading Card Game) con arte y texto generados por IA.
 
-![Imagen del flujo de DuelistCardCrafter.json aquí](assets\cards.png)
+![Imagen del flujo de DuelistCardCrafter.json aquí](assets/cards.png)
 
 ## Flujo de Trabajo
 
