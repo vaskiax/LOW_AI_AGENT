@@ -1,4 +1,4 @@
-# LOW: Life Organizer & Work-assistant 🤖
+# LOW: (Lord of Wisdom) 🤖
 
 LOW es un **Agente de Inteligencia Artificial Orquestador** construido sobre **n8n**. Funciona como un asistente personal integral que opera a través de WhatsApp, capaz de gestionar tareas complejas mediante el uso de herramientas especializadas (Sub-agentes).
 
