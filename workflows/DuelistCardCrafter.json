@@ -1,0 +1,531 @@
+{
+  "name": "DuelistCardCrafter",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "concept_input"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -608,
+        0
+      ],
+      "id": "2d3e1fdc-58f2-4cbc-8da9-14da915f6af4",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4",
+          "mode": "list",
+          "cachedResultName": "GPT-4"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "# ROLE\nEres \"Duel Scribe\", un maestro diseñador de cartas. Tu trabajo es conceptualizar los elementos creativos de una carta, personificando conceptos abstractos en criaturas legendarias.\n\n# TASK\nRecibirás un concepto (`concept_input`). Tu única tarea es analizarlo y generar una salida en formato JSON con TRES claves: `card_title`, `card_description`, y `art_prompt`.\n\n# RULES FOR EACH COMPONENT\n1.  `card_title`: Un nombre temático y evocador para la carta.\n2.  `card_description`: El texto de efecto de la carta, explicando el concepto.\n3.  `art_prompt`: Una descripción visual únicamente del ARTE que irá dentro de la carta. Debe seguir estas reglas estrictas:\n    *   **REGLA DE PERSONIFICACIÓN (CRÍTICA):** Tu objetivo principal es **personificar el concepto en una entidad humanoide o animalística**. Imagina cómo sería el \"espíritu\", \"elemental\", \"guardián\" o \"avatar\" de ese concepto. El ser puede estar hecho de los elementos del concepto (luz, energía, ecuaciones, etc.).\n    *   **Estilo:** Describe el estilo como \"arte de fantasía digital, épico, detallado, vibrante, con energía brillante, al estilo de Yu-Gi-Oh!, o sea, la imagen generada debe ser tipo anime o animacion\".\n\nEvita uso de palabras prohibidas por LLMs\n\nEl texto de las cartas, titulo y descripcion, hazlo en ingles\n\n# OUTPUT FORMAT\nTu respuesta DEBE ser únicamente un objeto JSON válido.\nEjemplo para \"Ecuación de Calor\":\n{\n  \"card_title\": \"Avatar de la Entropía\",\n  \"card_description\": \"Cuando esta carta entra al campo, todos los monstruos reciben 500 puntos de daño. La ecuación del calor describe cómo se distribuye la energía en un medio, tendiendo siempre al equilibrio térmico.\",\n  \"art_prompt\": \"Un majestuoso elemental humanoide hecho de plasma solar y luz líquida, personificando el calor. La figura flota serenamente en el centro de la imagen, irradiando un calor intenso y controlado. Ecuaciones matemáticas sutiles y brillantes orbitan a su alrededor como un aura. La entidad no es agresiva; simplemente manifiesta el principio del equilibrio térmico. Arte de fantasía digital, épico, detallado, 4K, al estilo de Yu-Gi-Oh!.\"\n}"
+            },
+            {
+              "content": "={{ $json.concept_input }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        -400,
+        0
+      ],
+      "id": "4c21ab23-9ce8-431c-9067-139d1a02d253",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "9JCpS47ruwCV3wRT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtiene el primer item que llega desde el nodo anterior (el Agente IA)\nconst item = $input.item;\n\n// 1. NAVEGAR hasta la cadena de texto que contiene el JSON.\n// Esta ruta coincide exactamente con la estructura de salida que me mostraste.\nconst jsonString = item.json.output[0].content[0].text;\n\n// 2. PARSEAR (convertir) la cadena de texto en un objeto JSON real.\n// JSON.parse() es la función mágica que hace la conversión.\nconst parsedJson = JSON.parse(jsonString);\n\n// 3. DEVOLVER el nuevo objeto JSON estructurado.\n// Los nodos siguientes ahora recibirán un JSON limpio y fácil de usar.\nreturn {\n  json: parsedJson\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        0
+      ],
+      "id": "f48ee378-3804-4881-b15f-a4de93a56f80",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "prompt": "={{ $json.art_prompt }}",
+        "options": {
+          "dalleQuality": "standard",
+          "style": "vivid"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        352,
+        96
+      ],
+      "id": "30940c15-fd7f-4250-b1c1-43aee9aa76b1",
+      "name": "Art Gen",
+      "credentials": {
+        "openAiApi": {
+          "id": "9JCpS47ruwCV3wRT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": " ca0fc8e7ffef8ea941f9e30f44de1365.jpg",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1D0QblRs-fdnAdEYLuNeohabW4o0rIUY_",
+            "mode": "list",
+            "cachedResultName": "Cards",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1D0QblRs-fdnAdEYLuNeohabW4o0rIUY_"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        352,
+        -128
+      ],
+      "id": "c98854f8-076a-4426-8b83-3248e0339595",
+      "name": "Search files and folders",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "WzzMAtub6KLytXxk",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        560,
+        -128
+      ],
+      "id": "33db4345-9095-4b2b-833f-3922b48b23f9",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "WzzMAtub6KLytXxk",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1072,
+        0
+      ],
+      "id": "bc7be7c6-ec84-4104-a960-d69c11fb43e4",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "operation": "resize",
+        "dataPropertyName": "art_binary",
+        "width": "=563",
+        "height": "=565",
+        "resizeOption": "ignoreAspectRatio",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        0
+      ],
+      "id": "d7582a2b-5c1f-4e9b-ad65-c8c5e3e29a7b",
+      "name": "Edit Image"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ff563ebf-99ab-4bb0-97ab-3c21828dfed6",
+              "name": "template_binary",
+              "value": "data",
+              "type": "binary"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {
+          "stripBinary": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        768,
+        -128
+      ],
+      "id": "0749f9e6-774b-4b0a-a58c-86446f049192",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "81ddfabe-36f7-48a6-9f26-4ba722c08573",
+              "name": "art_binary",
+              "value": "data",
+              "type": "binary"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {
+          "stripBinary": true
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        768,
+        96
+      ],
+      "id": "d77c681e-1845-4ec2-abb8-8b60f477a5e5",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "operation": "composite",
+        "dataPropertyName": "template_binary",
+        "dataPropertyNameComposite": "art_binary",
+        "positionX": 80,
+        "positionY": 190,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [
+        1520,
+        0
+      ],
+      "id": "3bf397f9-5e25-458f-8d6f-ddc70894d287",
+      "name": "Edit Image1"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "dataPropertyName": "template_binary",
+        "text": "={{ $('Code in JavaScript').item.json.card_description }}",
+        "fontSize": 16,
+        "positionX": 70,
+        "positionY": 870,
+        "lineLength": 70,
+        "options": {
+          "font": "/usr/share/fonts/truetype/msttcorefonts/Verdana.ttf"
+        }
+      },
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [
+        1712,
+        0
+      ],
+      "id": "a685616c-9138-49b1-8b68-baf06959ed0b",
+      "name": "Edit Image2"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "dataPropertyName": "template_binary",
+        "text": "={{ $('Code in JavaScript').item.json.card_title }}",
+        "fontSize": 32,
+        "positionX": 70,
+        "positionY": 90,
+        "options": {
+          "font": "/usr/share/fonts/truetype/msttcorefonts/Georgia_Bold.ttf"
+        }
+      },
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [
+        1920,
+        0
+      ],
+      "id": "923c3abf-404b-4005-af73-7ee062f987c0",
+      "name": "Edit Image3"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "773652655831097",
+        "recipientPhoneNumber": "573245649442",
+        "messageType": "image",
+        "mediaPath": "useMedian8n",
+        "mediaPropertyName": "template_binary",
+        "additionalFields": {
+          "mediaCaption": "={{ $('Code in JavaScript').item.json.card_title }}"
+        }
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        2128,
+        0
+      ],
+      "id": "c715f39d-0cdf-4155-8f12-cfbec0ffb072",
+      "name": "Send message",
+      "webhookId": "42314d78-476c-4697-84cd-69e1ec919541",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "mfkKL7er3VCPk6Jr",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c3dca218-f9b7-46f8-8d0d-79a567abaa37",
+              "name": "status",
+              "value": "carta creada y ya enviada al user",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2336,
+        0
+      ],
+      "id": "96de10b0-e06e-49f9-b7f1-54dda1f20790",
+      "name": "Edit Fields2"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "concept_input": "quiero una carta de la ecuacion de onda de schrodinger "
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Art Gen",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Art Gen": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Edit Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Edit Image": {
+      "main": [
+        [
+          {
+            "node": "Edit Image1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Image1": {
+      "main": [
+        [
+          {
+            "node": "Edit Image2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Image2": {
+      "main": [
+        [
+          {
+            "node": "Edit Image3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Image3": {
+      "main": [
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2e51c35e-4ff4-4ec1-b6db-c94f2e84a7b9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3267c33f32c8c5c33b8cad4d203eae3937e4f571a6f4c158f2c9b9d55118f1f1"
+  },
+  "id": "amefsW3X5EmHzj4V",
+  "tags": []
+}

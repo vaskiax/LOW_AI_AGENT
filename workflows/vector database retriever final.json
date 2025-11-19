@@ -1,0 +1,169 @@
+{
+  "name": "vector database retriever final",
+  "nodes": [
+    {
+      "parameters": {
+        "model": "text-embedding-ada-002",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        848,
+        672
+      ],
+      "id": "332751af-791e-4805-8bc4-fe7cad0df426",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "9JCpS47ruwCV3wRT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Encuentra la informacion apropiada para responder a la consulta del usuario",
+        "tableName": {
+          "__rl": true,
+          "value": "documents",
+          "mode": "list",
+          "cachedResultName": "documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        880,
+        496
+      ],
+      "id": "6bda0758-099e-4c26-b2b9-9e62c500e4ce",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "2wS2ytAtw1vQXEAA",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        608,
+        464
+      ],
+      "id": "03ae6d78-125e-4fe3-95d6-20b07243810e",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "9JCpS47ruwCV3wRT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "query"
+            }
+          ]
+        }
+      },
+      "id": "1526aa07-315a-4379-bfc6-e2a8fe742b34",
+      "typeVersion": 1.1,
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        464,
+        256
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.query }}",
+        "options": {
+          "systemMessage": "[BEGIN PROMPT]\\nActúa como un agente de recuperación de información especializado en bases de datos vectoriales.\\n\\n**Objetivo:**\\nResponder a la pregunta específica del usuario *exclusivamente* utilizando la información recuperada de una base de datos vectorial, o indicar la ausencia de dicha información si no se encuentra.\\n\\n**Instrucciones detalladas:**\\n1.  Recibe la pregunta del usuario.\\n2.  Procesa la pregunta para generar un vector de consulta y/o palabras clave optimizadas para la búsqueda en la base de datos vectorial.\\n3.  Ejecuta la consulta en la base de datos vectorial para recuperar fragmentos de texto o documentos relevantes.\\n4.  Analiza los resultados obtenidos para determinar si contienen información directa, relevante y suficiente para responder a la pregunta del usuario.\\n5.  Si la información es relevante y suficiente: Sintetiza una respuesta clara y concisa *únicamente* a partir de los datos recuperados de la base de datos vectorial.\\n6.  Si la información no es relevante, es insuficiente para responder completamente la pregunta, o no se recuperan resultados: Genera un mensaje estándar indicando que la información solicitada no fue encontrada.\\n\\n**Restricciones:**\\n*   La respuesta *debe derivarse enteramente* de la información recuperada de la base de datos vectorial.\\n*   No incorpores conocimientos previos, información externa ni realices inferencias más allá de lo explícitamente soportado por los datos encontrados.\\n*   Nunca inventes, completes o extrapoles información.\\n*   Si la base de datos no proporciona una respuesta concluyente, la única salida posible es el mensaje de ausencia de información.\\n*   No solicites aclaraciones adicionales al usuario ni expliques el proceso de búsqueda.\\n\\n**Formato de salida requerido:**\\n*   **Si se encuentra información relevante:** Una respuesta directa y concisa en texto plano, respondiendo a la pregunta.\\n*   **Si no se encuentra información relevante:** \"Lo siento, no he encontrado información pertinente para tu pregunta en la base de datos.\"\\n\\n**Tono o estilo:**\\nObjetivo, preciso y conciso.\\n\\n**Contexto expandido:**\\nSe asume que el agente tiene acceso y la capacidad de interactuar con una base de datos vectorial pre-indexada y configurada para búsquedas semánticas o por similitud.\\n[END PROMPT]\t"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        672,
+        256
+      ],
+      "id": "143418b1-9b45-420d-9faa-7f4b2b052e03",
+      "name": "AI Agent"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Supabase Vector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2be6efb7-37c6-4365-b811-534ae8e3cd8e",
+  "meta": {
+    "instanceId": "3267c33f32c8c5c33b8cad4d203eae3937e4f571a6f4c158f2c9b9d55118f1f1"
+  },
+  "id": "l5dueCQBG5AnW8nT",
+  "tags": []
+}

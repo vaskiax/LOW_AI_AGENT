@@ -1,0 +1,576 @@
+{
+  "name": "LOW",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "messages"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.whatsAppTrigger",
+      "typeVersion": 1,
+      "position": [
+        432,
+        0
+      ],
+      "id": "525c0fbc-d13f-4557-ad9e-c1513fbac8f0",
+      "name": "WhatsApp Trigger",
+      "webhookId": "51a4069e-0905-490d-83d4-d48a90ac5916",
+      "credentials": {
+        "whatsAppTriggerApi": {
+          "id": "iBDwDP91WgZLpdjx",
+          "name": "WhatsApp OAuth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "93eb6a37-642b-480e-80fe-62a85a4a7233",
+              "leftValue": "={{ $('WhatsApp Trigger').item.json.messages[0].from == \"573245649442\" }}",
+              "rightValue": "\"573245649442\"",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        624,
+        0
+      ],
+      "id": "f0836285-7240-42ae-9647-0557d2ac1515",
+      "name": "bot prove"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{\n  // Usamos un ternario para decidir qué devolver.\n  // SI hay un documento...\n  ($('WhatsApp Trigger').item.json.messages?.[0]?.document) \n  \n  // ENTONCES, devolvemos el objeto JSON con los datos del archivo.\n  ? {\n    \"inputType\": \"file\",\n    \"filename\": $('WhatsApp Trigger').item.json.messages[0].document.filename,\n    \"media_id\": $('WhatsApp Trigger').item.json.messages[0].document.id\n  } \n  \n  // SI NO, devolvemos SOLO el string del texto.\n  : $('WhatsApp Trigger').item.json.messages?.[0]?.text?.body || \"\"\n}}",
+        "options": {
+          "systemMessage": "# ROLE\nEres un Agente Orquestador de IA, el cerebro central de un sistema de automatización avanzado. Tu propósito es interpretar solicitudes de usuario, seleccionar la herramienta adecuada y ejecutarla con un formato de parámetros perfecto.\n\n# PRIMARY DIRECTIVE\nTu directiva principal es analizar la intención del usuario y llamar a la herramienta correcta. Tu llamada a la herramienta DEBE coincidir exactamente con el esquema que espera la herramienta.\n\n# AVAILABLE TOOLS\nDispones de las siguientes herramientas. Sigue sus reglas de invocación al pie de la letra.\n\n1.  **`ResumeTailor`**:\n    *   **Descripción**: Crea una hoja de vida (CV) en PDF, personalizada para una oferta de trabajo específica a partir de una URL.\n    *   **Cuándo usarla**: Cuando el usuario pida \"crea un CV para este trabajo\", \"adapta mi hoja de vida\", o proporcione una URL de una oferta laboral.\n    *   **Parámetros**: `job_offer_url` (string, obligatorio).\n\n2.  **`DuelistCardCrafter`**:\n    *   **Descripción**: Transforma cualquier concepto (texto o imagen) en una carta de Yu-Gi-Oh! completa.\n    *   **Cuándo usarla**: Para cualquier solicitud de creación de cartas temáticas.\n    *   **Parámetros**: `concept_input`.\n\n3.  **`google_drive_manager`**:\n    *   **Descripción**: Gestiona operaciones de archivos genéricos en Google Drive.\n    *   **Cuándo usarla**: Para guardar o buscar archivos que no estén relacionados con la creación de CVs.\n    *   **Parámetros**: `operation`, `filename`, `media_id`, `query`.\n\n4.  **`researcher`**, **`prompter`**, etc... (tus otras herramientas)\n\n# OPERATIONAL RULES\n1.  Analiza la intención del usuario. Si la intención es crear un CV a partir de un enlace, DEBES usar `ResumeTailor`.\n2.  Construye la llamada a la herramienta con los parámetros correctos.\n3.  Ejecuta y responde al usuario con el resultado final."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        848,
+        -16
+      ],
+      "id": "197d72df-3a68-48c4-8fd6-85ab980bf5af",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=  {{ $('WhatsApp Trigger').item.json.contacts[0].wa_id }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        576,
+        480
+      ],
+      "id": "ee691e0a-0294-4fe2-bc5b-a034f433c63a",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "description": "Esta herramienta recibe como entrada una cadena de texto (string) que contiene los resultados ya formateados de una consulta RAG.\nEl contenido que recibe incluye uno o varios artículos con metadatos como título, año, fuente y resumen.\n\nSu función principal es:\n\n🎯 Objetivo\n\nTransformar ese string en un informe narrativo, organizado y fácil de leer, incorporando:\n\nExplicaciones claras y coherentes.\n\nEstructura ordenada por secciones.\n\nUso de íconos/emojis para mejorar la legibilidad.\n\nSeparación visual entre artículos.\n\nLenguaje accesible pero profesional.\n\n🧠 Funcionamiento\n\nEntrada: un string con varios artículos formateados en bloques (cada uno con título, año, autores/fuente y resumen).\n\nProcesamiento: el modelo interpreta el contenido sin hacer inferencias externas ni añadir información no presente.\n\nSalida: un informe perfectamente redactado pensado para entregarse directamente al usuario final o integrarse en reportes posteriores.\n\n🚀 Usos principales\n\nPresentar resultados de búsquedas académicas.\n\nGenerar informes legibles a partir de datos brutos.\n\nResumir investigaciones obtenidas mediante RAG.\n\nEnriquecer respuestas con un formato visualmente atractivo.\n\n🔌 Integración en el flujo orquestador\n\nEl orquestador solo debe:\n\nPasar el string resultante del formateador como mensaje de usuario a este nodo.\n\nRecibir el informe estructurado y usarlo como salida final del proceso o como insumo para pasos posteriores.\n\n📄 Ejemplo de salida esperada\n\nIntroducción breve\n\nLista de artículos con secciones claras\n\nComentarios o conclusiones opcionales basadas estrictamente en el contenido recibido\n\nEmojis y formato amigable",
+        "workflowId": {
+          "__rl": true,
+          "value": "iExTpMqatjBL5Jm9",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/iExTpMqatjBL5Jm9",
+          "cachedResultName": "researcher"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "query"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1552,
+        592
+      ],
+      "id": "735d1a43-9b0a-4f25-a561-1a0d2c88d5ef",
+      "name": "Call 'researcher'"
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "773652655831097",
+        "recipientPhoneNumber": "573245649442",
+        "textBody": "={{ $json.output }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        -16
+      ],
+      "id": "2c100ef9-33fc-4bbd-9240-68ad6084d219",
+      "name": "Send message",
+      "webhookId": "a818dc52-5946-4b4c-8e87-87d92e408210",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "mfkKL7er3VCPk6Jr",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "[BEGIN TOOL]\\nname: AIContentGenerator\\ndescription: Esta herramienta está diseñada para transformar cualquier solicitud del usuario en uno de dos formatos estructurados y optimizados para sistemas de IA: un prompt estructurado y completo para un Large Language Model (LLM), o una descripción detallada y funcional de una herramienta (capability) para un agente de IA. Su objetivo principal es reinterpretar, clarificar y expandir la intención del usuario para producir una instrucción formal y totalmente utilizable por otro sistema de IA, llenando huecos de manera razonable si la información inicial es ambigua o incompleta.\\ninputs:\\n  user_request: La solicitud del usuario en lenguaje natural, indicando su necesidad de generar ya sea un prompt para un LLM o una descripción de herramienta para un agente de IA.\\noutputs:\\n  ai_structured_output: Una cadena de texto que contiene el prompt optimizado para LLM (en formato `[BEGIN PROMPT]...[END PROMPT]`) o la descripción de la herramienta para agente IA (en formato `[BEGIN TOOL]...[END TOOL]`), basado en la solicitud del usuario.\\nrules:\\n  1.  **Determinación de Intención**: Analizar la `user_request` para determinar si el usuario solicita un prompt estructurado o una descripción de herramienta.\\n  2.  **Clarificación y Expansión**: Reinterpretar, clarificar y expandir la intención central del usuario sin alterar su propósito fundamental.\\n  3.  **Generación de Prompt (si aplica)**:\\n      *   Extraer el objetivo principal, tareas específicas, restricciones, formatos requeridos, roles o comportamientos deseados y contexto adicional de la `user_request`.\\n      *   Construir el prompt estructurado usando el formato exacto: `[BEGIN PROMPT] <rol del modelo> <objetivo principal> <instrucciones detalladas> <restricciones> <formato de salida> <tono/estilo si aplica> <contexto adicional si es necesario> [END PROMPT]`.\\n      *   Rellenar cualquier información faltante de manera razonable, incluyendo los supuestos mínimos en la sección `<contexto adicional>`.\\n  4.  **Generación de Descripción de Herramienta (si aplica)**:\\n      *   Extraer el nombre, descripción general, inputs (campos y descripciones), outputs (campos y descripciones), reglas de uso y ejemplos de uso de la herramienta solicitada.\\n      *   Construir la descripción de la herramienta usando el formato exacto: `[BEGIN TOOL] name: <nombre de la herramienta> description: <descripción general de lo que hace> inputs: <campo>: <descripción> outputs: <campo>: <descripción> rules: <regla 1> usage_examples: <ejemplo 1 de llamada o uso> [END TOOL]`.\\n      *   Rellenar cualquier información faltante de manera razonable, incluyendo los supuestos mínimos en la `description` de la herramienta.\\n  5.  **Exclusividad de Salida**: Siempre se debe devolver únicamente uno de los dos tipos de entregables (prompt o descripción de herramienta); nunca ambos.\\n  6.  **Autonomía de la Salida**: La respuesta final debe ser completamente autónoma, autoexplicativa y no debe hacer referencia a la conversación original o a los procesos internos de esta herramienta.\\n  7.  **Ausencia de Metacomentarios**: No se deben incluir análisis, pasos internos, razonamientos o explicaciones sobre el proceso de generación en la salida final.\\n  8.  **Formato No-JSON**: La salida generada no debe ser en formato JSON, a menos que la `user_request` lo pida explícitamente para el contenido del prompt o herramienta generada.\\nusage_examples:\\n  - AIContentGenerator(user_request=\\\"Necesito un prompt para analizar el sentimiento de reseñas de productos de electrónica en español, clasificando como positivo, negativo o neutro y explicando brevemente el porqué. El resultado debe ser en formato JSON.\\\")\\n  - AIContentGenerator(user_request=\\\"Quiero una herramienta para mi agente que permita buscar artículos científicos en una base de datos externa. Necesitaría un input para el término de búsqueda y que devuelva una lista de títulos y resúmenes.\\\")\\n[END TOOL]",
+        "workflowId": {
+          "__rl": true,
+          "value": "yM0MnaC26LTQxFUf",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/yM0MnaC26LTQxFUf",
+          "cachedResultName": "prompter"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "query"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1296,
+        592
+      ],
+      "id": "a4f56a78-b18e-4d5c-bd87-2ceee8c164d8",
+      "name": "Call 'prompter'"
+    },
+    {
+      "parameters": {
+        "description": "[BEGIN TOOL]\\nname: GoogleDriveManager\\ndescription: Gestiona operaciones con archivos en Google Drive, permitiendo guardar, descargar y buscar archivos dentro de la plataforma.\\ninputs:\\n  operation: La acción a realizar. Valores exactos: `save_file` (guardar un archivo), `download_file` (descargar un archivo), `search_file` (buscar archivos). (string, obligatorio)\\n  filename: El nombre del archivo para operaciones de guardar o descargar, o para refinar una búsqueda. (string, opcional)\\n  media_id: El ID único del archivo en Google Drive para operaciones de descarga. (string, opcional)\\n  query: El término de búsqueda a utilizar para encontrar archivos. (string, opcional)\\noutputs:\\n  status: Indica el resultado de la operación. Puede ser \"success\" o \"error\". (string)\\n  message: Una descripción detallada del resultado de la operación, incluyendo errores o confirmaciones. (string)\\n  data: Contiene la información relevante de la operación. Para `save_file`, incluye el ID y URL del archivo. Para `download_file`, el contenido del archivo. Para `search_file`, una lista de archivos encontrados con sus IDs, nombres y detalles. (object, opcional)\\nrules:\\n  El parámetro `operation` es obligatorio y debe ser uno de los valores permitidos (`save_file`, `download_file`, `search_file`).\\n  Si `operation` es `save_file`, el parámetro `filename` es obligatorio. Se espera que el contenido del archivo a guardar sea proporcionado por el contexto del agente.\\n  Si `operation` es `download_file`, se debe proporcionar al menos `media_id` o `filename` para identificar el archivo a descargar.\\n  Si `operation` es `search_file`, el parámetro `query` es obligatorio para especificar los términos de búsqueda.\\nusage_examples:\\n  GoogleDriveManager(operation='save_file', filename='informe_ventas_Q3.pdf')\\n  GoogleDriveManager(operation='download_file', media_id='1a2b3c4d5e6f7g')\\n  GoogleDriveManager(operation='search_file', query='presentacion marketing')\\n[END TOOL]",
+        "workflowId": {
+          "__rl": true,
+          "value": "ubJfxaQof60QNSfn",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/ubJfxaQof60QNSfn",
+          "cachedResultName": "google_drive_manager"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}",
+            "media_id": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('media_id', ``, 'string') }}",
+            "filename": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('filename', ``, 'string') }}",
+            "operation": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('operation', ``, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "operation",
+              "displayName": "operation",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "filename",
+              "displayName": "filename",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "media_id",
+              "displayName": "media_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        832,
+        576
+      ],
+      "id": "fd2ecaa1-715f-4902-a317-f7ffbc2dd6f1",
+      "name": "Call 'google_drive_manager'"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4.1-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        416,
+        336
+      ],
+      "id": "4ceded14-72bb-4424-a2a0-54fedde2ae7a",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "9JCpS47ruwCV3wRT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "description": "[BEGIN TOOL]\nname: DuelistCardCrafter\ndescription: Esta herramienta es un sub-agente de IA y un estudio de diseño de cartas. Su única función es tomar un concepto, texto o imagen proporcionado por el usuario y transformarlo en una carta completa de Yu-Gi-Oh!, incluyendo una imagen de arte original, un título temático y una descripción de efecto. Es la herramienta perfecta cuando el usuario quiere \"crear una carta de\", \"diseñar una carta sobre\", \"transformar esto en una carta de Yu-Gi-Oh!\" o cualquier solicitud similar de generación creativa.\ninputs:\n  concept_input: El tema o la idea que el usuario quiere convertir en una carta. Puede ser un texto descriptivo (como una ecuación de física y su explicación) o la entrada de una imagen. (string, obligatorio)\noutputs:\n  card_image: La imagen final de la carta de Yu-Gi-Oh! generada, lista para ser enviada. (file)\n  status: Un mensaje de texto que indica el resultado de la operación. (string)\nrules:\n  1. Esta herramienta debe ser utilizada para CUALQUIER solicitud de creación de cartas.\n  2. La herramienta maneja todo el proceso de diseño internamente: interpreta el concepto, escribe el texto de la carta, genera el arte y ensambla la imagen final.\n  3. No se debe usar para búsquedas o tareas que no sean la creación de una carta.\nusage_examples:\n  - DuelistCardCrafter(concept_input=\"La ecuación de onda de Schrödinger, que describe cómo cambia el estado cuántico de un sistema físico con el tiempo.\")\n  - DuelistCardCrafter(concept_input=\"[El usuario envía una imagen de una botella de Coca-Cola]\")\n[END TOOL]",
+        "workflowId": {
+          "__rl": true,
+          "value": "amefsW3X5EmHzj4V",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/amefsW3X5EmHzj4V",
+          "cachedResultName": "DuelistCardCrafter"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "concept_input": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('concept_input', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "planet_name"
+          ],
+          "schema": [
+            {
+              "id": "concept_input",
+              "displayName": "concept_input",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1776,
+        576
+      ],
+      "id": "50dadd42-d3df-4f82-a834-34e96b070fec",
+      "name": "Call 'DuelistCardCrafter'"
+    },
+    {
+      "parameters": {
+        "description": "[BEGIN TOOL]\nname: ResumeTailor\ndescription: Esta herramienta es un sub-agente de IA experto en recursos humanos. Su única función es crear una hoja de vida (CV) profesional y completamente personalizada para una oferta de trabajo específica. El agente realiza web scraping de la URL de la oferta, recupera la información personal del usuario desde una base de conocimiento en Google Drive, y luego redacta un CV optimizado que resalta las habilidades y experiencias más relevantes para ese puesto. Es la herramienta perfecta cuando el usuario pide \"crear una hoja de vida para este trabajo\", \"adapta mi CV para esta oferta\", o proporciona un enlace a una vacante laboral.\ninputs:\n  job_offer_url: La URL completa y directa a la página web que contiene la descripción de la oferta de trabajo. (string, obligatorio)\noutputs:\n  resume_pdf: El archivo PDF final de la hoja de vida personalizada. (file)\n  status: Un mensaje de texto que indica el resultado de la operación, como \"Hoja de vida para el puesto de [Cargo] creada con éxito.\" (string)\nrules:\n  1. Esta herramienta DEBE ser utilizada siempre que el usuario proporcione una URL con la intención de crear un documento de aplicación laboral.\n  2. La herramienta maneja todo el proceso de forma autónoma: scraping, lectura de datos personales, redacción y generación del PDF.\n  3. No debe usarse para búsquedas generales de trabajo ni para redacción de textos que no sean una hoja de vida.\nusage_examples:\n  - ResumeTailor(job_offer_url=\"https://www.linkedin.com/jobs/view/1234567890/\")\n  - ResumeTailor(job_offer_url=\"https://www.ejemplo.com/carreras/ingeniero-de-software-senior\")\n[END TOOL]",
+        "workflowId": {
+          "__rl": true,
+          "value": "FxXgtTpzc3xMHrga",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/FxXgtTpzc3xMHrga",
+          "cachedResultName": "ResumeTailor"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "job_offer_url": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('job_offer_url', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "url"
+          ],
+          "schema": [
+            {
+              "id": "job_offer_url",
+              "displayName": "job_offer_url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "sessionId",
+              "displayName": "sessionId",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1984,
+        592
+      ],
+      "id": "7a144f5b-f187-40af-ba26-a4ecf3508493",
+      "name": "Call 'ResumeTailor'"
+    },
+    {
+      "parameters": {
+        "description": "[BEGIN TOOL]\\nname: VectorDataQueryTool\\ndescription: Esta herramienta está diseñada para realizar búsquedas semánticas dentro de una base de conocimiento vectorial. Recupera segmentos de información relevantes basándose en la consulta del usuario, sirviendo como la fuente principal de información para la mayoría de las solicitudes. Su función es proporcionar respuestas rápidas y concisas extrayendo datos existentes.\\ninputs:\\n  query_text: Una cadena de texto que representa la pregunta o afirmación del usuario para la cual se debe realizar una búsqueda en la base de datos vectorial.\\noutputs:\\n  results: Una cadena de texto que contiene la información más relevante encontrada en la base de datos vectorial. Si no se encuentra información relevante, este campo estará vacío.\\n  status: Una cadena de texto que indica el resultado de la operación: \"success\" si se encontraron resultados relevantes, o \"not_found\" si no se pudo recuperar información para la consulta.\\nrules:\\n  1. La herramienta `VectorDataQueryTool` DEBE ser la primera herramienta invocada para cualquier consulta del usuario, a menos que la consulta indique explícitamente la necesidad de \"papers\", \"artículos científicos\", \"estudios de investigación\" o tipos de publicaciones académicas similares.\\n  2. Si la herramienta `VectorDataQueryTool` es invocada y su `status` es \"not_found\", el agente DEBE informar al usuario que no se encontró información relevante para su consulta en la base de conocimiento actual y NO debe proceder a invocar otras herramientas de búsqueda general a menos que el usuario refine su consulta o solicite explícitamente una búsqueda más amplia.\\n  3. Si la consulta del usuario se refiere claramente a la búsqueda de documentos académicos, como \"papers\", \"artículos de investigación\" o \"estudios científicos\" (por ejemplo, \"Necesito un paper sobre...\", \"Busca artículos sobre...\", \"Dónde encuentro estudios de...\"), el agente NO DEBE usar esta herramienta y DEBE priorizar otras herramientas diseñadas específicamente para la búsqueda de publicaciones académicas.\\nusage_examples:\\n  - VectorDataQueryTool(query_text=\"¿Cuál es el proceso de fotosíntesis en plantas?\")\\n  - VectorDataQueryTool(query_text=\"Información sobre la teoría de la relatividad.\")\\n  - VectorDataQueryTool(query_text=\"¿Quién fue Alan Turing?\")\\n[END TOOL]\t",
+        "workflowId": {
+          "__rl": true,
+          "value": "l5dueCQBG5AnW8nT",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/l5dueCQBG5AnW8nT",
+          "cachedResultName": "vector database retriever final"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "query": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('query', ``, 'string') }}"
+          },
+          "matchingColumns": [
+            "query"
+          ],
+          "schema": [
+            {
+              "id": "query",
+              "displayName": "query",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1072,
+        592
+      ],
+      "id": "fbe223f3-aa77-4ae9-9cba-8e2d9e51dc76",
+      "name": "Call 'vector database retriever final'"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "WhatsApp Trigger": {
+      "main": [
+        [
+          {
+            "node": "bot prove",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "bot prove": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'researcher'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'prompter'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'google_drive_manager'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'DuelistCardCrafter'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'ResumeTailor'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'vector database retriever final'": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a8d92039-af84-4aef-8984-d4a851c0de0f",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3267c33f32c8c5c33b8cad4d203eae3937e4f571a6f4c158f2c9b9d55118f1f1"
+  },
+  "id": "a67SszRaDyl9uZMk",
+  "tags": []
+}

@@ -1,0 +1,413 @@
+{
+  "name": "researcher",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// The AI response is nested deeply. Extract the real payload.\nconst root = $input.all()[0].json;\n\n// Path: root.output[0].content[0].text.input\n\nlet input;\n\ntry {\n\tinput = root.output[0].content[0].text.input;\n} catch (e) {\n\tthrow new Error(\"Invalid AI response format. Could not extract input object.\");\n}\n\nif (!input || !input.query) {\n\tthrow new Error(\"Missing 'query' field in AI response.\");\n}\n\n// Validate query\nif (input.query.trim().length < 3) {\n\tthrow new Error(\"Query too short. Minimum 3 characters required.\");\n}\n\n// Clean and preprocess\nconst processedQuery = {\n\toriginal_query: input.query,\n\tcleaned_query: input.query.trim().replace(/\\s+/g, \" \"),\n\tquery_length: input.query.trim().length,\n\testimated_complexity: input.query.split(\" \").length > 10 ? \"high\" : \"medium\",\n\n\t// these come from the AI or default values\n\tsearch_scope: input.search_scope || \"academic_papers\",\n\tresponse_style: input.response_style || \"comprehensive\",\n\tlanguage: input.language || \"spanish\",\n\toutput_format: input.output_format || \"markdown\",\n\tpriority_level: input.priority_level || \"medium\",\n\tuser_email: input.user_email || null,\n\n\tsession_id: `rag_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,\n\ttimestamp: new Date().toISOString(),\n\tprocessing_steps: []\n};\n\n// Add metadata step\nprocessedQuery.processing_steps.push({\n\tstep: \"input_validation\",\n\tstatus: \"completed\",\n\ttimestamp: new Date().toISOString()\n});\n\n// Keywords extraction\nprocessedQuery.search_keywords = processedQuery.cleaned_query\n\t.toLowerCase()\n\t.split(\" \")\n\t.filter(w => w.length > 3)\n\t.slice(0, 8);\n\n// Search strategy rules\nconst searchStrategies = {\n\tweb_general: [\"google\", \"bing\", \"duckduckgo\"],\n\tacademic_papers: [\"scholar\", \"arxiv\", \"pubmed\"],\n\tnews_articles: [\"news_api\", \"rss_feeds\"],\n\ttechnical_docs: [\"github\", \"stackoverflow\", \"documentation\"],\n\tcompany_internal: [\"drive\", \"confluence\", \"notion\"],\n\tmulti_source: [\"google\", \"scholar\", \"news_api\", \"github\"]\n};\n\nprocessedQuery.search_strategy =\n\tsearchStrategies[processedQuery.search_scope] || [\"google\"];\n\nreturn [{ json: processedQuery }];\n"
+      },
+      "id": "de5b5d88-8e1e-4bfc-91bf-905d709a6cb9",
+      "name": "🔍 Query Preprocessor",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1168,
+        912
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "query"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        608,
+        912
+      ],
+      "id": "a10a0295-f097-45dd-a6a7-1acd89120ca6",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "GPT-3.5-TURBO"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "={{ $json.query }}"
+            },
+            {
+              "role": "system",
+              "content": "Eres un módulo cuyo único propósito es transformar una consulta simple del usuario en un objeto JSON limpio bajo la clave “input”.\nSi el usuario solo entrega \"query\", debes rellenar el resto de campos con valores por defecto:\n\nsearch_scope: “academic_papers”\n\nresponse_style: “comprehensive”\n\nlanguage: “spanish”\n\noutput_format: “markdown”\n\npriority_level: “medium”\n\nuser_email: null\nDevuelve exclusivamente un JSON válido que cumpla exactamente el esquema.\nNunca agregues texto adicional, markdown o comillas externas."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        848,
+        912
+      ],
+      "id": "f3b12b03-b5e7-4592-856e-786d9917f701",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "9JCpS47ruwCV3wRT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.crossref.org/works",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.cleaned_query }}"
+            },
+            {
+              "name": "rows",
+              "value": "10"
+            },
+            {
+              "name": "sort",
+              "value": "relevance"
+            },
+            {
+              "name": "order",
+              "value": "desc"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "9a805200-52bb-4e8b-8435-87be41b23c40",
+      "name": "crossref",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1488,
+        816
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "url": "http://export.arxiv.org/api/query?search_query=all:KEYWORDS",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.cleaned_query }}"
+            },
+            {
+              "name": "rows",
+              "value": "10"
+            },
+            {
+              "name": "sort",
+              "value": "relevance"
+            },
+            {
+              "name": "order",
+              "value": "desc"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "2a12c61b-1df7-4d9c-8161-2289c8007ce5",
+      "name": "arxiv",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        1488,
+        1024
+      ],
+      "typeVersion": 4.2
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1760,
+        912
+      ],
+      "id": "4179be24-fbbd-43ad-baf1-6b1abae11db6",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1968,
+        928
+      ],
+      "id": "e38d2787-f834-40ef-afd4-6c00aae0e0a5",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ae59c557-cc80-43db-9474-7b5df39ac719",
+              "name": "data",
+              "value": "={{$json}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2272,
+        928
+      ],
+      "id": "9a03aab3-b65b-40c4-9f27-fecec7e3a8a9",
+      "name": "stringer"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Obtener el string JSON\nconst raw = $json.data;\n\n// 2. Parsearlo a objeto real\nconst parsed = JSON.parse(raw);\n\n// 3. Obtener la lista de ítems de Crossref\nconst items = parsed.data[0].message.items;\n\n// 4. Mapeamos la información que necesitas y convertimos a string\nconst referencias = items.map(item => {\n  const titulo = item.title?.[0] || \"N/A\";\n  const año = item.issued?.[\"date-parts\"]?.[0]?.[0] || \"N/A\";\n  const fuente = item.DOI || item.URL || \"N/A\";\n  const resumen = item.abstract || \"N/A\";\n\n  return `Título: ${titulo}\nAño: ${año}\nFuente: ${fuente}\nResumen: ${resumen}\n-------------------------------------`;\n});\n\n// 5. Unir todo en un solo string\nconst resultadoFinal = referencias.join(\"\\n\");\n\n// 6. Retornar como un único string\nreturn [\n  {\n    json: {\n      formatted: resultadoFinal\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2528,
+        928
+      ],
+      "id": "4c635655-1532-4303-88d0-0ab733ddb710",
+      "name": "parse info"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4",
+          "mode": "list",
+          "cachedResultName": "GPT-4"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=You are an expert assistant specialized in summarizing and presenting bibliographic search results in a clean, friendly and well-structured format.\n\nYour task:\nGiven a list of article entries provided by the user (titles, years, summaries, sources, etc.), generate a well-written report that is:\n\n1. Clear, easy to read, and segmented into sections.\n2. Free of hallucinations — only use information explicitly contained in the user message.\n3. Written in a friendly tone with light emojis where appropriate (no exaggeration).\n4. Well formatted with spacing, headings, bullet points, and readable structure.\n5. Focused on presenting:\n   – What articles were found  \n   – What each article is about (based on the summary provided)  \n   – Any notable ideas, themes or patterns  \n   – If information is missing (e.g., “N/A”), acknowledge it naturally.\n\nRules:\n- Do NOT invent information that is not in the user message.\n- Do NOT cite external sources.\n- If the provided list contains many items, group and summarize them intelligently.\n- If the list contains few items, describe them individually with slightly more detail.\n- If the user provides no valid articles, return a friendly message indicating that no relevant information was found.\n\nOutput:\nA polished, structured narrative summary of the articles sent by the user.\n"
+            },
+            {
+              "content": "={{ $('When Executed by Another Workflow').item.json.query }}\n\nEsto es lo que encontró:\n\n{{ $json.formatted }}\n"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        2768,
+        928
+      ],
+      "id": "089e320e-4989-44d5-90e5-03a5783aec7f",
+      "name": "formatter",
+      "credentials": {
+        "openAiApi": {
+          "id": "9JCpS47ruwCV3wRT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4e2923db-efb5-4c9a-a44c-613c282b9367",
+              "name": "response",
+              "value": "={{ $json.output[0].content[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3072,
+        928
+      ],
+      "id": "34197170-c97a-42be-8cc1-edc32fd9134e",
+      "name": "formateado"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "query": "Quiero algunos papers sobre agentes de inteligencia artifical"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "🔍 Query Preprocessor": {
+      "main": [
+        [
+          {
+            "node": "crossref",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "arxiv",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "🔍 Query Preprocessor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "crossref": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "arxiv": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "stringer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "stringer": {
+      "main": [
+        [
+          {
+            "node": "parse info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parse info": {
+      "main": [
+        [
+          {
+            "node": "formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "formatter": {
+      "main": [
+        [
+          {
+            "node": "formateado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "7e4ad840-8467-4c39-9304-1ede1db60dc6",
+  "meta": {
+    "templateId": "6691",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3267c33f32c8c5c33b8cad4d203eae3937e4f571a6f4c158f2c9b9d55118f1f1"
+  },
+  "id": "iExTpMqatjBL5Jm9",
+  "tags": []
+}

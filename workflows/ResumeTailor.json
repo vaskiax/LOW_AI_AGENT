@@ -1,0 +1,771 @@
+{
+  "name": "ResumeTailor",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "job_offer_url"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        64,
+        144
+      ],
+      "id": "0b9ca23e-8735-402d-b226-7cb635a87baa",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=https://www.ziprecruiter.com/Jobs/Artificial-Intelligence-Engineer?lvk=_RL5wOrIEdcTmUPqkaAw-Q.--O2pq0Un83"
+            },
+            {
+              "role": "system",
+              "content": "Eres un Agente de Recuperación de Información de RRHH. Tu única misión es seguir un protocolo estricto para extraer información de una base de conocimiento, analizar una oferta de trabajo y devolver un JSON completo y preciso.\n\n**Manifiesto de la Base de Conocimiento (`cv_data`):**\nTu base de conocimiento está en Google Drive. Esta tabla es tu única fuente de verdad sobre los archivos disponibles y cómo leerlos.\n\n| Nombre Exacto del Archivo                | Tipo de Archivo   | Herramienta Correcta para Leer | Propósito del Contenido                          |\n| ----------------------------------------- | ----------------- | -------------------------------- | ------------------------------------------------ |\n| **'datos personales'**                    | Google Sheet      | `googleSheetsTool`               | **OBLIGATORIO:** Nombre, contacto, enlaces.      |\n| **'experiencia laboral'**                 | Google Sheet      | `googleSheetsTool`               | Historial profesional.                           |\n| **'proyectos personales y academicos'**   | Google Sheet      | `googleSheetsTool`               | Proyectos técnicos.                              |\n| **'cursos y certificados'**               | Google Sheet      | `googleSheetsTool`               | Formación complementaria.                        |\n| **'formacion academica'**                 | Google Sheet      | `googleSheetsTool`               | Educación universitaria.                         |\n| **'habilidades'**                         | Google Doc        | `googleDocsTool`                 | Lista de competencias.                           |\n| **'Presentaciones personales'**           | Google Doc        | `googleDocsTool`                 | Borradores de resúmenes.                         |\n\n**PROTOCOLO DE ACCIÓN OBLIGATORIO Y SECUENCIAL:**\n\n**FASE 1: ANÁLISIS Y PLANIFICACIÓN.**\n1.  Recibe la URL de la oferta y extráela. Su propósito es dar CONTEXTO para la selección y redacción de la información, pero los datos del CV provienen EXCLUSIVAMENTE de los archivos de Google Drive.\n2.  Crea una lista de verificación mental con TODOS los 7 archivos del manifiesto. Tu misión es leer el contenido de CADA UNO de ellos sin excepción.\n\n**FASE 2: BUCLE DE RECUPERACIÓN EXHAUSTIVA.**\n1.  Para CADA archivo en tu lista, ejecuta el siguiente sub-protocolo de tres pasos:\n    *   **Paso A: BUSCAR ID.** Usa `googleDriveTool` (`fileFolder: search`) con `queryString: \"nombre_exacto_del_archivo\"` para obtener el ID.\n    *   **Paso B: IDENTIFICAR HERRAMIENTA.** Consulta la columna `Herramienta Correcta para Leer` en el Manifiesto.\n    *   **Paso C: LEER CONTENIDO.** Usa la herramienta identificada en el Paso B con el `documentId` obtenido en el Paso A.\n\n2.  **REGLA DE FASE 2:** NO intentes sintetizar ni generar el JSON final durante esta fase. Tu único objetivo es recolectar TODA la información de TODOS los archivos de la lista.\n\n**FASE 3: SÍNTESIS Y GENERACIÓN DEL JSON FINAL.**\n1.  Una vez, y **SOLO UNA VEZ**, que hayas leído TODOS los archivos, pasas a esta fase.\n2.  **DIRECTIVA CRÍTICA:** Al construir el JSON final, el objeto `candidate_profile` DEBE ser poblado PRIMERO con la información extraída del archivo `'datos personales'` (nombre, email, etc.). Este paso no es opcional.\n3.  Después, analiza la oferta y selecciona las habilidades, experiencias y proyectos más relevantes de la información que recolectaste para completar el resto del JSON.\n4.  **REGLA DE ORO (INQUEBRANTABLE):** Tu turno NO puede terminar sin emitir el JSON final una vez que la recuperación ha comenzado. Si tienes problemas con un archivo, anótalo, pero SIEMPRE produce el JSON con la información que sí obtuviste.\n\n**Formato de Salida Obligatorio (JSON):**\n{\n  \"job_offer_details\": {\n    \"title\": \"...\",\n    \"company\": \"...\",\n    \"key_requirements\": [...]\n  },\n  \"candidate_profile\": {\n    \"personal_info\": {\n      \"name\": \"Nombre extraído de 'datos personales'\",\n      \"email\": \"Email extraído de 'datos personales'\",\n      \"phone\": \"Teléfono extraído de 'datos personales'\",\n      \"linkedin\": \"URL de LinkedIn extraída de 'datos personales'\",\n      \"github\": \"URL de GitHub extraída de 'datos personales'\"\n    },\n    \"relevant_skills\": [...],\n    \"key_experiences\": [...],\n    \"highlighted_projects\": [...],\n    \"education\": \"...\",\n    \"suggested_summary\": \"...\"\n  }\n}"
+            }
+          ]
+        },
+        "builtInTools": {
+          "webSearch": {
+            "searchContextSize": "medium"
+          }
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        352,
+        144
+      ],
+      "id": "b8da4f99-6d5c-4bfb-8088-c13677769b03",
+      "name": "info retriever",
+      "credentials": {
+        "openAiApi": {
+          "id": "9JCpS47ruwCV3wRT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "documentURL": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Doc_ID_or_URL', `no es el nombre del documento, sino su ID. Puede encontrarse con la herramienta de google drive`, 'string') }}",
+        "simple": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Simplify', ``, 'boolean') }}"
+      },
+      "type": "n8n-nodes-base.googleDocsTool",
+      "typeVersion": 2,
+      "position": [
+        288,
+        368
+      ],
+      "id": "3b8808a2-3c84-4470-9dc5-bed10d023bd1",
+      "name": "leer docs",
+      "credentials": {
+        "googleDocsOAuth2Api": {
+          "id": "X8ZSiSLdJ9WHs19m",
+          "name": "Google Docs account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "limit": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Limit', ``, 'number') }}",
+        "queryString": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Search_Query', ``, 'string') }}",
+        "returnAll": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Return_All', ``, 'boolean') }}",
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "18oEPa0gYnji2Yt-AeDIwqPiORRZUyn4q",
+            "mode": "list",
+            "cachedResultName": "cv_data",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/18oEPa0gYnji2Yt-AeDIwqPiORRZUyn4q"
+          },
+          "whatToSearch": "files"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDriveTool",
+      "typeVersion": 3,
+      "position": [
+        416,
+        368
+      ],
+      "id": "2d64f0b6-0584-4247-afaa-6c1e26b12e75",
+      "name": "buscar info de docs",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "WzzMAtub6KLytXxk",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('Document', `no es el nombre del documento, sino su ID. Puede encontrarse con la herramienta de google drive`, 'string') }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "=Hoja 1",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        544,
+        368
+      ],
+      "id": "cead3e9c-07b2-4b70-970c-da5689916dd9",
+      "name": "leer sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "9bFwXqOWIa3AFMjZ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4",
+          "mode": "list",
+          "cachedResultName": "GPT-4"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Eres un redactor profesional de currículums (CV) para el sector tecnológico, especializado en perfiles de Ingeniería de IA, Ciencia de Datos y Desarrollo Python. Eres un experto en presentar la información de forma clara, concisa e impactante.\n\n**Contexto:**\nRecibirás un objeto JSON con la información más relevante de un candidato, ya filtrada y adaptada para una oferta de trabajo específica.\n\n**Tu Tarea:**\n1.  Utiliza el JSON de entrada para estructurar y redactar un CV completo.\n2.  El formato de salida DEBE ser **Markdown**. Utiliza la sintaxis de Markdown (## para títulos, * para listas, ** para negritas) para darle un formato profesional. No inventes formatos, solo usa Markdown estándar.\n3.  Asegúrate de que el lenguaje sea profesional, orientado a resultados y utilice verbos de acción.\n4.  Una vez que hayas generado el contenido en Markdown, ejecuta las siguientes acciones en orden:\n    a. Utiliza la herramienta `hoja_de_vida_creada` para crear un nuevo Google Doc. El título del documento debe ser \"CV - [Título del Puesto] - [Nombre de la Empresa]\". Pasa el contenido Markdown completo al cuerpo del documento.\n    b. Utiliza la herramienta `postulaciones` para añadir una nueva fila a la hoja de cálculo de seguimiento. Rellena las columnas con la información de la oferta y el enlace al Google Doc que acabas de crear. El estado inicial siempre debe ser 'CV Creado'.\n\n**Ejemplo de Estructura de Salida (Markdown):**\n# Nombre del Candidato\n**Contacto:** email@example.com | **LinkedIn:** linkedin.com/in/... | **GitHub:** github.com/...\n\n## Resumen Profesional\n[Usa el 'suggested_summary' del JSON y mejóralo si es necesario]\n\n## Habilidades Técnicas\n*   **Lenguajes:** [Habilidad 1, Habilidad 2]\n*   **Tecnologías:** [Tecnología 1, Tecnología 2]\n\n## Experiencia Laboral Relevante\n**[Cargo]** | **[Empresa]**\n*   [Punto 1 de la descripción, enfocado en logros]\n*   [Punto 2 de la descripción, enfocado en logros]\n\n## Proyectos Destacados\n**[Nombre del Proyecto]**\n*   [Punto 1 de la descripción del proyecto]\n*   [Punto 2 de la descripción del proyecto]\n*   **Tecnologías:** [Tecnología 1, Tecnología 2]\n\n## Educación\n[Tu formación aquí]"
+            },
+            {
+              "content": "={{ $json.output[0].content[0].text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        752,
+        144
+      ],
+      "id": "33189d3d-81a3-4054-8b26-e4e27c5f9f07",
+      "name": "sketch creator",
+      "credentials": {
+        "openAiApi": {
+          "id": "9JCpS47ruwCV3wRT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Eres una API de Evaluación de Currículums. Tu única función es recibir un borrador de CV y los detalles de una oferta de trabajo, y devolver un análisis estructurado en formato JSON. Eres una máquina, no un asistente conversacional. Tu respuesta debe ser ÚNICAMENTE el objeto JSON.\n\n**PROTOCOLO DE ANÁLISIS:**\n\n1.  **Analizar Oferta:** Recibirás los detalles de la oferta. Extrae y resume los 3-5 requisitos más importantes en una lista.\n2.  **Analizar Borrador:** Recibirás el borrador del CV en Markdown.\n3.  **Comparar y Evaluar:** Compara el borrador con los requisitos de la oferta. Asigna una puntuación del 1 al 100 basada en la relevancia, el impacto y la claridad.\n4.  **Generar Recomendaciones:** Crea una lista de recomendaciones específicas y accionables para mejorar el borrador.\n\n**REGLA DE SALIDA INQUEBRANTABLE:**\nTu única y exclusiva salida debe ser un objeto JSON válido que contenga 4 claves de nivel superior: `job_offer_summary`, `original_draft`, `score` y `recommendations`. NO incluyas NINGÚN texto, explicación, saludo o markdown antes o después de las llaves `{}` del JSON. Tu respuesta debe empezar con `{` y terminar con `}`.\n\n**Formato de Salida Obligatorio y Único (JSON):**\n\n{\n  \"job_offer_summary\": {\n    \"title\": \"Título del Puesto\",\n    \"company\": \"Nombre de la Empresa\",\n    \"key_requirements\": [\n      \"Requisito clave #1 extraído de la oferta.\",\n      \"Requisito clave #2 extraído de la oferta.\",\n      \"Requisito clave #3 extraído de la oferta.\"\n    ]\n  },\n  \"original_draft\": \"[Aquí va el texto completo y sin modificar del borrador de CV que recibiste]\",\n  \"score\": [Tu puntuación numérica, ej. 74],\n  \"recommendations\": [\n    \"Recomendación #1: ...\",\n    \"Recomendación #2: ...\",\n    \"Recomendación #3: ...\"\n  ]\n}"
+            },
+            {
+              "content": "={{ $json.cv_text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        64
+      ],
+      "id": "924b3083-77c2-41f0-8c1e-6e772b4e084a",
+      "name": "evaluator",
+      "credentials": {
+        "openAiApi": {
+          "id": "9JCpS47ruwCV3wRT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// --- Inicio del Código Corregido y Definitivo ---\n\n// Accede a los datos del nodo anterior ('evaluator').\nconst items = $items();\n\nlet rawText;\n\ntry {\n  // *** RUTA DE ACCESO CORREGIDA ***\n  // Esta es la ruta exacta para llegar al texto dentro de la estructura de entrada.\n  rawText = items[0].json.output[0].content[0].text;\n} catch (error) {\n  // Si la estructura de entrada cambia, este error nos lo dirá.\n  return [{ json: { error: \"La estructura del INPUT del evaluador ha cambiado. No se pudo encontrar la ruta 'output[0].content[0].text'.\", details: error.message } }];\n}\n\n// Ahora, el resto del código buscará el JSON dentro de ese texto.\nconst startIndex = rawText.indexOf('{');\nconst endIndex = rawText.lastIndexOf('}');\n\n// Si no se encuentra un JSON DENTRO del campo 'text', devolvemos un error.\nif (startIndex === -1 || endIndex === -1) {\n  // Este error ahora significa que el 'evaluator' no puso el JSON en el campo 'text'.\n  return [{ json: { error: \"No se encontró un objeto JSON dentro del campo 'text' de la respuesta.\" } }];\n}\n\n// Extrae la cadena de texto que contiene únicamente el JSON.\nconst jsonString = rawText.substring(startIndex, endIndex + 1);\n\nlet parsedData;\n\ntry {\n  // Convierte la cadena de texto JSON en un objeto JavaScript real.\n  parsedData = JSON.parse(jsonString);\n} catch (error) {\n  // Si el JSON está mal formado, este error nos lo indicará.\n  return [{ json: { error: \"El JSON extraído está mal formado y no se pudo parsear.\", details: error.message } }];\n}\n\n// Devuelve el objeto JSON limpio y estructurado.\nreturn [{\n  json: {\n    job_offer_summary: parsedData.job_offer_summary || {},\n    original_draft: parsedData.original_draft || \"\",\n    score: parsedData.score || 0,\n    recommendations: parsedData.recommendations || []\n  }\n}];\n\n// --- Fin del Código ---"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1904,
+        64
+      ],
+      "id": "602772c5-1a8c-40c2-92ae-663c48074f7c",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7e5b2276-2ba5-47d5-a8c7-0672221d11bc",
+              "leftValue": "={{ $json.score }}",
+              "rightValue": 85,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2128,
+        64
+      ],
+      "id": "432c907f-a7f3-4ef9-a871-a44fc8ec6faf",
+      "name": "scoring"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4",
+          "mode": "list",
+          "cachedResultName": "GPT-4"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=CV original :{{ $json.original_draft }}"
+            },
+            {
+              "content": "=puntaje obtendo:  {{ $json.score }}"
+            },
+            {
+              "content": "=recomendaciones:\n\n {{ $json.recommendations }}"
+            },
+            {
+              "role": "system",
+              "content": "Eres un Editor Maestro de Currículums. Tu única función es tomar un borrador de CV, un informe de evaluación con una puntuación y una lista de recomendaciones, y aplicar esas recomendaciones para crear la versión final y optimizada del documento.\n\n**Contexto y Misión:**\nTu objetivo es mejorar el borrador inicial (`original_draft`) aplicando sistemáticamente cada una de las `recommendations` para incrementar el `score` potencial del CV. El resultado final debe ser un único bloque de texto en formato Markdown.\n\n**PROTOCOLO DE EDICIÓN OBLIGATORIO:**\n\n**1. Análisis del Input:**\n   - Recibirás un objeto JSON con tres claves: `original_draft`, `score` y `recommendations`.\n   - Lee y comprende CADA recomendación. Son tu única guía para la edición.\n\n**2. Proceso de Edición Iterativa:**\n   - Toma el `original_draft` como tu base.\n   - Aplica cada recomendación de la lista una por una. Esto no es opcional. Debes integrar la esencia de cada sugerencia en el texto.\n   - Tu trabajo va más allá de copiar y pegar. Debes reescribir, parafrasear y reestructurar secciones del borrador para que las mejoras fluyan de manera natural y profesional.\n     *   **Si una recomendación pide cuantificar:** Busca la sección relevante y añade métricas lógicas (ej. \"Mejoró la eficiencia en un 30%\").\n     *   **Si una recomendación pide reformular:** Reescribe la frase o párrafo para que sea más impactante o se alinee mejor con el tono de la oferta.\n     *   **Si una recomendación pide añadir información:** Intégrala en la sección más apropiada del CV.\n\n**3. Generación del Output Final:**\n   - Una vez que todas las recomendaciones hayan sido aplicadas, revisa el documento completo una última vez para asegurar coherencia y fluidez.\n   - Tu única salida debe ser el texto completo del currículum finalizado, en formato **Markdown**.\n\n**REGLAS DE SALIDA INQUEBRANTABLES:**\n\n1.  **ÚNICO OUTPUT DE TEXTO:** Tu respuesta debe ser exclusivamente el texto del CV final en Markdown.\n2.  **SIN EXPLICACIONES:** No incluyas frases como \"Aquí está la versión corregida:\", \"He aplicado las siguientes mejoras:\", ni ningún otro texto conversacional. Tu respuesta debe empezar directamente con el nombre del candidato (ej. `# Jorge Andrey Gonzalez Mosquera...`).\n3.  **CONSERVACIÓN DEL FORMATO:** Mantén la estructura de Markdown del borrador original (títulos, listas, negritas).\n\n**Ejemplo de Lógica de Trabajo:**\n\n*   **Input (Recomendación):** \"En la descripción del trabajo en Concentrix, cambiar 'atender clientes' por 'resolver X tickets técnicos por día...'\"\n*   **Tu Proceso Mental:** *Okay, busco la sección 'Experiencia Laboral', encuentro 'Concentrix'. Borro la línea original y la reemplazo con la versión mejorada y cuantificada.*\n*   **Output (Fragmento del CV final):**\n    ```markdown\n    ## Experiencia Laboral\n    **English Customer Service Agent** | **Concentrix**\n    *   Resolvía un promedio de 50 tickets técnicos por día, demostrando alta eficiencia en la resolución de problemas y manteniendo un índice de satisfacción del cliente del 95%.\n    ...\n    ```"
+            },
+            {
+              "content": "=Recuerda el conjunto de habilidades e informacion del candidato\n\n{{ $('info retriever').item.json.output[0].content[0].text }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        2352,
+        160
+      ],
+      "id": "e690fd47-2699-4aa8-a082-014f6986274f",
+      "name": "editor_text",
+      "credentials": {
+        "openAiApi": {
+          "id": "9JCpS47ruwCV3wRT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "210266bc-7abc-4fd8-abfa-47bc65f32430",
+              "name": "output[0].content[0].text",
+              "value": "={{ $json.output[0].content[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1104,
+        144
+      ],
+      "id": "40f05f8d-e05a-4c7d-83e8-e3065682ce25",
+      "name": "original"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5d647410-968c-42c5-87b5-581e0ce301b2",
+              "name": "output[0].content[0].text",
+              "value": "={{ $json.output[0].content[0].text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2704,
+        240
+      ],
+      "id": "5e5beb96-b15b-4031-a4bf-6696fddf8837",
+      "name": "edited"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Obtenemos todas las entradas posibles\nconst items = $input.all();\nlet finalText = \"\";\n\n// --- PASO 1: BÚSQUEDA PRIORITARIA (El Editor) ---\n// Buscamos en todas las entradas si alguna tiene la firma del EDITOR.\n// Nota: Ajusta 'response.content' o 'text' según lo que arroje tu nodo editor_text exactamente.\nconst itemDelEditor = items.find(item => \n    item.json.text || \n    (item.json.response && item.json.response.content) ||\n    (item.json.message && item.json.message.content)\n);\n\n// --- PASO 2: BÚSQUEDA SECUNDARIA (El Sketch Original) ---\n// Buscamos si alguna tiene la firma del SKETCH CREATOR.\nconst itemDelCreator = items.find(item => \n    item.json.output && \n    item.json.output[0] && \n    item.json.output[0].content\n);\n\n// --- PASO 3: LÓGICA DE DECISIÓN ---\nif (itemDelEditor) {\n    // ¡ENCONTRAMOS UNA CORRECCIÓN! USAMOS ESTA.\n    // (Prioridad máxima: Si existe una edición, ignoramos el original)\n    if (itemDelEditor.json.text) {\n        finalText = itemDelEditor.json.text;\n    } else if (itemDelEditor.json.response) {\n        finalText = itemDelEditor.json.response.content;\n    } else {\n        finalText = itemDelEditor.json.message.content;\n    }\n} \nelse if (itemDelCreator) {\n    // No hay edición, así que es la primera vuelta. Usamos el original.\n    finalText = itemDelCreator.json.output[0].content[0].text;\n} \nelse {\n    finalText = \"ERROR: No se encontró ni el original ni la edición.\";\n}\n\n// Retornamos el texto limpio para el Evaluador\nreturn [{\n    json: {\n        cv_text: finalText\n    }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        144
+      ],
+      "id": "7d1ee418-0f41-4d39-bd46-b42acd5fe4a3",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5fec50be-d084-4436-be9e-541541c509d0",
+              "name": "job_offer_summary.title",
+              "value": "={{ $json.job_offer_summary.title }}\n",
+              "type": "string"
+            },
+            {
+              "id": "65660499-ae9f-4aa3-a38d-36e8844b11aa",
+              "name": "job_offer_summary.company",
+              "value": "={{ $json.job_offer_summary.company }}",
+              "type": "string"
+            },
+            {
+              "id": "10b3bd0e-5fdb-4de1-a375-c2b00ddf2b1e",
+              "name": "job_offer_summary.key_requirements",
+              "value": "={{ $json.job_offer_summary.key_requirements }}",
+              "type": "string"
+            },
+            {
+              "id": "f1be5b54-0e01-43b6-8cc5-f1141b2a7ea5",
+              "name": "original_draft",
+              "value": "={{ $json.original_draft }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2416,
+        -32
+      ],
+      "id": "b98b60d5-7e0d-4d76-820a-968462e0b3b7",
+      "name": "final"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4",
+          "mode": "list",
+          "cachedResultName": "GPT-4"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "={{ $json.original_draft }}"
+            },
+            {
+              "role": "system",
+              "content": "Eres un Desarrollador Experto en LaTeX y Consultor de Tecnología de RRHH especializado en ATS (Applicant Tracking Systems).\n\nTU MISIÓN:\nRecibirás el contenido final de un Currículum Vitae (CV) en formato Markdown. Tu tarea es convertirlo en código LaTeX completo, listo para compilar y optimizado para ser leído tanto por humanos como por algoritmos de reclutamiento (ATS).\n\nREGLAS DE DISEÑO Y ESTÁNDARES 2025:\n1. Estilo Visual: Moderno, minimalista, limpio y profesional. Usa una fuente Sans-Serif por defecto (como Helvet o Arial) ya que se leen mejor en pantalla.\n2. Compatibilidad ATS:\n   - NO uses columnas flotantes complejas (minipage es aceptable si se usa con cuidado, pero prefiere un diseño lineal o tabular simple).\n   - NO uses gráficos, íconos que requieran librerías externas no estándar, ni cajas de texto flotantes (tikz absoluto).\n   - El flujo de texto debe ser seleccionable y lineal.\n3. Dependencias:\n   - El código debe ser AUTOCONTENIDO. No asumas que el usuario tiene archivos .cls personalizados.\n   - Usa la clase estándar `article`.\n   - Usa paquetes estándar: `geometry` (márgenes estrechos), `titlesec` (para formato de títulos), `enumitem` (para listas compactas), `hyperref` (para enlaces clicables y metadatos PDF), `xcolor` (para acentos de color sutiles).\n\nREGLAS TÉCNICAS DE LATEX:\n1. ESCAPE DE CARACTERES: Es CRÍTICO que escapes correctamente los caracteres especiales de LaTeX que puedan venir en el texto (ej: convertir '%' en '\\%', '&' en '\\&', '$' en '\\$', '#' en '\\#', '_' en '\\_'). Esto es común en lenguajes de programación (C++, C#) y métricas.\n2. Enlaces: Convierte las URLs de LinkedIn/GitHub en enlaces activos usando \\href{url}{texto}.\n3. Estructura:\n   - Encabezado: Nombre grande, datos de contacto debajo centrados o en línea.\n   - Secciones: Títulos claros, en mayúsculas o negrita, con una línea horizontal separadora si es estético.\n   - Listas: Usa listas con viñetas (itemize) compactas (noitemsep) para ahorrar espacio.\n\nFORMATO DE SALIDA:\nTu respuesta debe contener ÚNICA Y EXCLUSIVAMENTE el bloque de código LaTeX.\n- Empieza con \\documentclass{article}.\n- Termina con \\end{document}.\n- NO incluyas explicaciones, ni saludos, ni markdown (```latex) envolvente si es posible, o solo el bloque de código."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2,
+      "position": [
+        2688,
+        -32
+      ],
+      "id": "3d25bbeb-22cd-4d73-bedc-c5f76998cba0",
+      "name": "latexter",
+      "credentials": {
+        "openAiApi": {
+          "id": "9JCpS47ruwCV3wRT",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toText",
+        "sourceProperty": "output[0].content[0].text",
+        "binaryPropertyName": "=data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        3040,
+        -32
+      ],
+      "id": "f3b26a9c-1cbe-48de-9ef5-05a6cf93b678",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Code in JavaScript').item.json.job_offer_summary.title }} - {{ $('Code in JavaScript').item.json.job_offer_summary.company }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1ycf2LoUmeqgDOFyXYJLqh4PkH1i6x140",
+          "mode": "list",
+          "cachedResultName": "cv_created",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1ycf2LoUmeqgDOFyXYJLqh4PkH1i6x140"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3472,
+        -160
+      ],
+      "id": "89ae1496-da88-453b-95a0-73a018d3b67e",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "WzzMAtub6KLytXxk",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "send",
+        "phoneNumberId": "773652655831097",
+        "recipientPhoneNumber": "573245649442",
+        "messageType": "document",
+        "mediaPath": "useMedian8n",
+        "additionalFields": {
+          "mediaFilename": "={{ $('Code in JavaScript').item.json.job_offer_summary.title }} - {{ $('Code in JavaScript').item.json.job_offer_summary.company }}",
+          "mediaCaption": "=Requisitos clave de la oferta:\n\n{{ $('Code in JavaScript').item.json.job_offer_summary.key_requirements }}\n"
+        }
+      },
+      "type": "n8n-nodes-base.whatsApp",
+      "typeVersion": 1.1,
+      "position": [
+        3504,
+        112
+      ],
+      "id": "7b260630-0a05-4427-9e5f-74f8e87973d7",
+      "name": "Send message",
+      "webhookId": "0a7f1c3f-faae-424e-b8e6-77480543abd8",
+      "credentials": {
+        "whatsAppApi": {
+          "id": "mfkKL7er3VCPk6Jr",
+          "name": "WhatsApp account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b023e4e8-4111-4f00-81f9-e62f34eb438d",
+              "name": "status",
+              "value": "terminado con exito",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3744,
+        112
+      ],
+      "id": "194d2080-17ad-49e4-9a32-928559342ada",
+      "name": "Edit Fields"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "job_offer_url": "https://quipux.buk.co/seleccions/074861ebf8ab4dcd6af5cd6da7a1c71d8b55250da6dd69fd4d1d564d00c8662486b2eda0a188a3d6d0e17279f502d341b60c03e96947a6b64162a67be8a53237/postular?referrer=portal"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "info retriever",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "info retriever": {
+      "main": [
+        [
+          {
+            "node": "sketch creator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "leer docs": {
+      "ai_tool": [
+        [
+          {
+            "node": "info retriever",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "buscar info de docs": {
+      "ai_tool": [
+        [
+          {
+            "node": "info retriever",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "leer sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "info retriever",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "sketch creator": {
+      "main": [
+        [
+          {
+            "node": "original",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "evaluator": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "scoring",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "scoring": {
+      "main": [
+        [
+          {
+            "node": "final",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "editor_text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "editor_text": {
+      "main": [
+        [
+          {
+            "node": "edited",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "original": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "edited": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "evaluator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "final": {
+      "main": [
+        [
+          {
+            "node": "latexter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "latexter": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send message": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "562e7664-f1f4-41a5-9fa7-d6758666afd7",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3267c33f32c8c5c33b8cad4d203eae3937e4f571a6f4c158f2c9b9d55118f1f1"
+  },
+  "id": "FxXgtTpzc3xMHrga",
+  "tags": []
+}
