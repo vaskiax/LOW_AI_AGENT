@@ -5,7 +5,7 @@
 ## Descripción
 Este es el **Agente Principal** y punto de entrada del sistema. Actúa como un enrutador inteligente que recibe mensajes de WhatsApp, mantiene el contexto de la conversación (memoria) y decide qué herramienta subalterna ejecutar para satisfacer la solicitud del usuario.
 
-![Imagen del flujo de LOW.json aquí](assets/low.png)
+![Imagen del flujo de LOW.json aquí](../assets/low.png)
 
 ## Flujo de Trabajo
 

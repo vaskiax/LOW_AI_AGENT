@@ -5,7 +5,7 @@
 ## Descripción
 Herramienta utilitaria que permite a LOW interactuar directamente con el almacenamiento en la nube. Maneja la lógica de guardar, buscar y descargar archivos, además de indexarlos para búsquedas semánticas.
 
-![Imagen del flujo de google_drive_manager.json aquí](assets/drive.png)
+![Imagen del flujo de google_drive_manager.json aquí](../assets/drive.png)
 
 ## Flujo de Trabajo
 
