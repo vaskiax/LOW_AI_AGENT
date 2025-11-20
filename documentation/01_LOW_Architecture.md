@@ -1,4 +1,4 @@
-# LOW: Life Organizer & Work-assistant (Orchestrator)
+# LOW: (Orchestrator)
 
 **Archivo:** `LOW.json`
 
